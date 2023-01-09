@@ -1,0 +1,26 @@
+# main
+node_modules
+coverage
+coverage.json
+typechain
+typechain-types
+tests
+case.json
+
+# hardhat files
+cache
+artifacts
+
+# vscode
+.vscode
+
+.history/
+*.vsix
+
+# env
+.env
+
+# Mac OS General
+.DS_Store
+.AppleDouble
+.LSOverride
