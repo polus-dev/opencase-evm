@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
+import "hardhat/console.sol";
 import "./random/Random.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -16,18 +17,14 @@ contract PolusOpenCase is Ownable {
     using SafeERC20 for IERC20;
 
     struct RndUsrs {
+        address msgsendr;
         uint256 randsalt;
         uint256 blocknum;
         uint256 fxdprice;
     }
 
     event CaseOpened(address indexed receiver, uint256 randsalt, uint256 out);
-
-    event CaseOpenedAtLateBlock(
-        address indexed receiver,
-        uint256 expected,
-        uint256 got
-    );
+    event LateBlock(address indexed receiver, uint256 expfrom, uint256 expto);
 
     string private _ipfstr; //  ipfs base string "ipfs://{CID}/"
     address private _nftcol; // address of IERC721 NFT collection
@@ -38,7 +35,8 @@ contract PolusOpenCase is Ownable {
     uint256 private _rndfrm; // start of rand range
     uint256 private _fromts; // start timestamp
 
-    uint256 private constant WAITB = 2; // wait blocks
+    uint256 private constant WAITB = 9; // wait blocks
+    uint256 private constant DIFFB = 4; // allowed blocks diff
     uint256 private constant MSTEP = 500; //  5%
     uint256 private constant MTARG = 2500; // 25%
     uint256 private constant DAY = 1 days;
@@ -64,6 +62,12 @@ contract PolusOpenCase is Ownable {
         _rndfrm = rndfrm_;
     }
 
+    modifier canBeUsed() {
+        require(_fromts > 0, "PolusOpenCase: not started");
+        require(_unused > 0, "PolusOpenCase: not unused");
+        _;
+    }
+
     function getati(uint256 i) private view returns (uint256) {
         return _shifted[i] != 0 ? _shifted[i] : i;
     }
@@ -73,9 +77,36 @@ contract PolusOpenCase is Ownable {
         _fromts = block.timestamp;
     }
 
-    function realcs() private {
+    function stagefrst(address next, bool fwd) external payable canBeUsed {
+        if (fwd) payable(next).transfer(msg.value);
+
+        _rndusrs[next] = RndUsrs({
+            msgsendr: msg.sender,
+            randsalt: Random.random(0),
+            blocknum: block.number + WAITB,
+            fxdprice: priced()
+        });
+    }
+
+    function stagescnd() external canBeUsed {
         RndUsrs memory user = _rndusrs[msg.sender];
-        IERC20(_ptoken).safeTransferFrom(msg.sender, _receiv, user.fxdprice);
+        require(user.blocknum > 0, "PolusOpenCase: not first");
+
+        uint256 fromblk = user.blocknum;
+        uint256 toblk = user.blocknum + DIFFB;
+
+        require(block.number >= fromblk, "PolusOpenCase: too early block");
+        if (block.number > toblk) {
+            emit LateBlock(user.msgsendr, fromblk, toblk);
+            delete _rndusrs[msg.sender];
+            return;
+        }
+
+        IERC20(_ptoken).safeTransferFrom(
+            user.msgsendr,
+            _receiv,
+            user.fxdprice
+        );
 
         uint256 idx = Random.cutrnd(_rndfrm, _unused, user.randsalt);
         uint256 out = getati(idx);
@@ -90,44 +121,23 @@ contract PolusOpenCase is Ownable {
             abi.encodePacked(_ipfstr, Strings.toString(out), ".json")
         );
 
-        IERC721(_nftcol).safeMint(msg.sender, out, uri);
+        IERC721(_nftcol).safeMint(user.msgsendr, out, uri);
 
-        emit CaseOpened(msg.sender, user.randsalt, out);
+        emit CaseOpened(user.msgsendr, user.randsalt, out);
         delete _rndusrs[msg.sender];
     }
 
-    function opencs() external {
-        require(_fromts > 0, "PolusOpenCase: not started");
-        require(_unused > 0, "PolusOpenCase: not unused");
-
-        uint256 expectedblk = _rndusrs[msg.sender].blocknum;
-
-        if (expectedblk == 0) {
-            _rndusrs[msg.sender] = RndUsrs(
-                Random.random(0),
-                block.number + WAITB,
-                priced()
-            );
-
-            return;
-        }
-
-        require(block.number > expectedblk, "PolusOpenCase: too early block");
-
-        if (block.number > expectedblk) {
-            emit CaseOpenedAtLateBlock(msg.sender, expectedblk, block.number);
-            delete _rndusrs[msg.sender];
-            return;
-        }
-
-        realcs();
+    function sicedy() public view returns(uint256) {
+        return (block.timestamp - _fromts) / DAY;
     }
 
-    function priced() internal view returns (uint256) {
-        uint256 sincedy = (block.timestamp - _fromts) / DAY;
-        uint256 percent = sincedy >= (MTARG / MSTEP) ? MTARG : sincedy * MSTEP;
+    function percnt() public view returns(uint256) {
+        uint256 sincedy = sicedy();
+        return sincedy >= (MTARG / MSTEP) ? MTARG : sincedy * MSTEP;
+    }
 
-        return _sprice + ((_sprice * percent) / 10_000);
+    function priced() public view returns (uint256) {
+        return _sprice + ((_sprice * percnt()) / 10_000);
     }
 
     function ipfstr() external view returns (string memory) {
@@ -172,6 +182,10 @@ contract PolusOpenCase is Ownable {
 
     function waitblk() external pure returns (uint256) {
         return WAITB; // wait blocks
+    }
+
+    function diffblk() external pure returns (uint256) {
+        return DIFFB; // allowed blocks diff
     }
 
     function margins() external pure returns (uint256) {
