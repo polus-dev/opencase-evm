@@ -15,11 +15,7 @@ library Random {
         return _randh(salt);
     }
 
-    function cutrnd(
-        uint256 from,
-        uint256 to,
-        uint256 salt
-    ) internal view returns (uint256) {
-        return (_randh(salt) % to) + from;
+    function cutrnd(uint256 to, uint256 salt) internal view returns (uint256) {
+        return _randh(salt) % to;
     }
 }

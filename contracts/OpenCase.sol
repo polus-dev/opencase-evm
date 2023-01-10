@@ -25,6 +25,7 @@ contract PolusOpenCase is Ownable {
     event CaseOpened(address indexed receiver, uint256 randsalt, uint256 out);
     event LateBlock(address indexed receiver, uint256 expfrom, uint256 expto);
 
+    string private _csname; //  case name
     string private _ipfstr; //  ipfs base string "ipfs://{CID}/"
     address private _nftcol; // address of IERC721 NFT collection
     address private _ptoken; // payment IERC20 token address
@@ -44,6 +45,7 @@ contract PolusOpenCase is Ownable {
     mapping(address => RndUsrs) private _rndusrs;
 
     constructor(
+        string memory csname_,
         string memory ipfstr_,
         address nftcol_,
         address ptoken_,
@@ -52,6 +54,7 @@ contract PolusOpenCase is Ownable {
         uint256 unused_,
         uint256 rndfrm_
     ) {
+        _csname = csname_;
         _ipfstr = ipfstr_;
         _nftcol = nftcol_;
         _ptoken = ptoken_;
@@ -107,8 +110,8 @@ contract PolusOpenCase is Ownable {
             user.fxdprice
         );
 
-        uint256 idx = Random.cutrnd(_rndfrm, _unused, user.randsalt);
-        uint256 out = getati(idx);
+        uint256 idx = Random.cutrnd(_unused, user.randsalt);
+        uint256 out = getati(idx) + _rndfrm;
 
         _unused -= 1;
         uint256 unused_ = _unused;
@@ -126,17 +129,21 @@ contract PolusOpenCase is Ownable {
         delete _rndusrs[msg.sender];
     }
 
-    function sicedy() public view returns(uint256) {
+    function sicedy() public view returns (uint256) {
         return (block.timestamp - _fromts) / DAY;
     }
 
-    function percnt() public view returns(uint256) {
+    function percnt() public view returns (uint256) {
         uint256 sincedy = sicedy();
         return sincedy >= (MTARG / MSTEP) ? MTARG : sincedy * MSTEP;
     }
 
     function priced() public view returns (uint256) {
         return _sprice + ((_sprice * percnt()) / 10_000);
+    }
+
+    function csname() external view returns (string memory) {
+        return _csname;
     }
 
     function ipfstr() external view returns (string memory) {

@@ -7,18 +7,29 @@ type DeployERC20TokenArgs = { name: string, symbol: string, premint: number }
 task('deploy-case', 'deploy "contracts/OpenCase.sol" smart contract')
     .setAction(async (_, hre) => {
         const OpenCase = await hre.ethers.getContractFactory('PolusOpenCase')
-        const opencase = await OpenCase.deploy(
-            casecfg.ipfstr,
-            casecfg.nftcol,
-            casecfg.ptoken,
-            casecfg.receiv,
-            casecfg.sprice,
-            casecfg.unused,
-            casecfg.rndfrm
-        )
 
-        await opencase.deployed()
-        console.log('PolusOpenCase deployed to:', opencase.address)
+        for (let i = 0; i < casecfg.casesa.length; i++) {
+            const currnt = casecfg.casesa[i]
+
+            const unused = (currnt.range[1] - currnt.range[0]) + 1
+            const rndfrm = currnt.range[0]
+
+            const opencase = await OpenCase.deploy(
+                currnt.cname,
+                currnt.ipfsb,
+                casecfg.nftcol,
+                casecfg.ptoken,
+                casecfg.receiv,
+                currnt.price,
+                unused,
+                rndfrm
+            )
+
+            await opencase.deployed()
+
+            const rangestr = `${currnt.range[0]},${currnt.range[1]}`
+            console.log(`Case deployed to: ${opencase.address} | ${currnt.cname} ${rangestr}`)
+        }
     })
 
 task('deploy-erc721', 'deploy "contracts/tokens/ERC721Token.sol" smart contract')

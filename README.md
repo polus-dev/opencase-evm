@@ -13,14 +13,17 @@ yarn v1.22.19 or newer
 3. create `case.json` file with your values:
 ```json
 {
-    "ipfstr": "ipfs://bafy.........................bm7mu/",
-    "nftcol": "0x74b7................................14e3",
-    "ptoken": "0xE097................................6921",
-    "receiv": "0xA644................................13e2",
-    "sprice": "1000000",
-    "unused": 20,
-    "rndfrm": 0
+    "nftcol": "0x74b7CF5C5Dc3854f06Ce75acE3dAB868C99014e3",
+    "ptoken": "0xE097d6B3100777DC31B34dC2c58fB524C2e76921",
+    "receiv": "0xA64452F16014599bA9e80bc1a1dE968624C113e2",
+    "ipfstr": [{
+        "cname": "case name",
+        "ipfsb": "ipfs://zdj7WfsbQNERbgiDCA8oPMGrSAF3Jd5tcXhyt7VMTTtiFE9S5/",
+        "price": "75000000",
+        "range": [26, 199]
+    }]
 }
+
 ```
 4. run `hh deploy-case --network realnet`
 5. done
