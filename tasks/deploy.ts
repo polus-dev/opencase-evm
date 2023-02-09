@@ -32,6 +32,16 @@ task('deploy-case', 'deploy "contracts/OpenCase.sol" smart contract')
         }
     })
 
+task('start-case', 'start case by address')
+    .addPositionalParam<string>('address', 'address of PolusOpenCase contract')
+    .setAction(async (arg: { address: string }, hre) => {
+        const OpenCase = await hre.ethers.getContractFactory('PolusOpenCase')
+        const opencase = OpenCase.attach(arg.address)
+
+        const tx = await opencase.startc()
+        console.log(`startc executed in tx ${tx.hash}`)
+    })
+
 task('deploy-erc721', 'deploy "contracts/tokens/ERC721Token.sol" smart contract')
     .addPositionalParam<string>('name', 'name of the token')
     .addPositionalParam<string>('symbol', 'symbol of the token')

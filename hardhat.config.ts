@@ -11,7 +11,7 @@ import * as dotenv from 'dotenv'
 dotenv.config({ path: '.env' })
 
 const config: HardhatUserConfig = {
-    defaultNetwork: 'hardhat',
+    defaultNetwork: 'realnet',
     networks: {
         realnet: {
             chainId: parseInt(process.env.CHAIN_ID || '', 10),
@@ -31,7 +31,7 @@ const config: HardhatUserConfig = {
         cache: './cache',
         artifacts: './artifacts'
     },
-    etherscan: { apiKey: { polygon: process.env.ETHERSCAN_KEY || '' } },
+    etherscan: { apiKey: { polygonMumbai: process.env.ETHERSCAN_KEY || '' } },
     gasReporter: {
         enabled: process.env.GAS_REPORTER_ENABLED === 'true',
         token: process.env.GAS_REPORTER_TOKEN,
